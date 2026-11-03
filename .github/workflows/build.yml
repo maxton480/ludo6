@@ -21,6 +21,21 @@ jobs:
           npx cap add android
           sed -i 's/<activity/<activity android:screenOrientation="portrait"/' android/app/src/main/AndroidManifest.xml
           npx cap sync android
+      - name: Set app icon
+        run: |
+          pip install pillow
+          python3 - <<'PY'
+          from PIL import Image
+          import glob, os
+          ic = Image.open("icon.png").convert("RGBA")
+          res = "android/app/src/main/res"
+          for f in glob.glob(res + "/mipmap-anydpi*/ic_launcher*.xml"):
+              os.remove(f)
+          for d, s in {"mdpi": 48, "hdpi": 72, "xhdpi": 96, "xxhdpi": 144, "xxxhdpi": 192}.items():
+              out = ic.resize((s, s), Image.LANCZOS)
+              for n in ("ic_launcher", "ic_launcher_round", "ic_launcher_foreground"):
+                  out.save(res + "/mipmap-" + d + "/" + n + ".png")
+          PY
       - name: Build APK
         run: cd android && chmod +x gradlew && ./gradlew assembleDebug
       - uses: actions/upload-artifact@v4
